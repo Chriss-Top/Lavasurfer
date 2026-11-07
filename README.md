@@ -8,12 +8,12 @@ In diesem Verzeichnis `python3 -m http.server 8080` ausführen und die Seite im 
 
 ## Spielen
 
-Solo oder lokales Duell wählen und den Run starten. Ziel: 2.400 Meter erreichen, bevor Brett und Turbo verbraucht sind.
+Solo oder lokales Duell wählen und den Run starten. Ziel: 12.000 Meter erreichen, bevor Brett und Turbo verbraucht sind.
 
-- Spieler 1: Pfeile links/rechts für Tempo und Rotation in der Luft, hoch zum Springen, runter für Turbo.
+- Spieler 1: Pfeile links/rechts zum Beschleunigen (rechts halten), Bremsen (links) und Rotieren in der Luft, hoch zum Springen, runter für Turbo.
 - Spieler 2: A/D, W und S entsprechend.
-- Wellen können bei genügend Tempo automatisch als Sprungschanze dienen.
-- Ein vollständiger Looping mit sauberer Landung füllt Turbo auf; schiefe Landungen beschädigen das Brett.
+- Wellen können bei genügend Tempo an der Kuppe automatisch als Sprungschanze dienen.
+- Jeder vollständige Looping gibt sofort 35 Turbo, eine saubere Landung weitere 15 (maximal 150); schiefe Landungen beschädigen das Brett.
 - Nach dem Schmelzen des Bretts mit Turbo auf den Düsen weiterfliegen.
 - P pausiert, R startet neu. Bei Fokusverlust wird automatisch pausiert.
 
