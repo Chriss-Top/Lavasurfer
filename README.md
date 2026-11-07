@@ -22,3 +22,9 @@ Tastatur erforderlich. Der Zwei-Spieler-Modus nutzt eine gemeinsame Kamera.
 ## Prüfung
 
 `node --check game.js` prüft die Syntax. Browser-Smoke-Test mit Chromium/Playwright: Rendering, zwei Spieler, Eingaben, Pause und Neustart ohne JavaScript-Laufzeitfehler geprüft.
+
+## Wellen, Kamera und Wiederaufbau
+
+Höhere Wellen mit vereinfachter Physik: Hangabtrieb, tangentiale Absprunggeschwindigkeit, Kontaktverlust durch Wellenkrümmung und ballistischer Flug mit Schwerkraft. Die gemeinsame Kamera passt Ausschnitt und Zoom an beide Spieler an, einschließlich hoher Sprünge und großer Abstände.
+
+Vor dem Start oder Wiederaufbau kann jeder Spieler oben Normal oder Diamant wählen. Normale Bretter schmelzen und nehmen Landeschaden; Diamantbretter sind unzerstörbar. Nach einem Tod baut eine beliebige neu gedrückte Taste alle gerade gestorbenen Spieler wieder auf, in der Nähe des noch fahrenden Mitspielers. Die Auswahl gilt beim nächsten Wiederaufbau oder Neustart.
