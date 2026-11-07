@@ -9,20 +9,21 @@ function slope(x){return 65/160*Math.cos(x/160)+25/72*Math.cos(x/72)}
 function curvature(x){return -65/(160*160)*Math.sin(x/160)-25/(72*72)*Math.sin(x/72)}
 const gravity=390;
 function boardType(i){return document.querySelector('#board'+(i+1)).value}
-function rebuild(p){const others=players.filter(q=>q!==p&&q.alive&&!q.done);p.x=others.length?Math.min(...others.map(q=>q.x)):Math.min(p.x,finish-100);Object.assign(p,{y:wave(p.x)-15,v:65,vy:0,board:100,fuel:100,angle:Math.atan(slope(p.x)),spin:0,airLoops:0,air:false,alive:true,done:false,diamond:boardType(players.indexOf(p)),bonus:0});running=true;paused=false;ui.style.display='none';document.querySelector('#state').textContent='WIEDER AUF DER WELLE';}
+function rebuild(p){const others=players.filter(q=>q!==p&&q.alive&&!q.done);p.x=others.length?Math.min(...others.map(q=>q.x)):Math.min(p.x,finish-100);Object.assign(p,{y:wave(p.x)-15,v:65,vy:0,board:100,fuel:100,angle:Math.atan(slope(p.x)),spin:0,airLoops:0,jumpHeld:false,air:false,alive:true,done:false,diamond:boardType(players.indexOf(p)),bonus:0});running=true;paused=false;ui.style.display='none';document.querySelector('#state').textContent='WIEDER AUF DER WELLE';}
 function fitCamera(){const w=canvas.clientWidth;const visible=players.length?players:[{x:w*.67,y:244}];const minX=Math.min(...visible.map(p=>p.x))-90,maxX=Math.max(...visible.map(p=>p.x))+120;const minY=Math.min(110,...visible.map(p=>p.y-85)),maxY=Math.max(370,...visible.map(p=>p.y+85));zoom=Math.min(1,w/(maxX-minX),(370-30)/(maxY-minY));camera=(minX+maxX)/2-w/(2*zoom);cameraY=(minY+maxY)/2-370/(2*zoom);}
 function select(n){if(running)return;mode=n;document.querySelector('#solo').classList.toggle('selected',n===1);document.querySelector('#duo').classList.toggle('selected',n===2)}
 document.querySelector('#solo').onclick=()=>select(1);document.querySelector('#duo').onclick=()=>select(2);
 function tone(freq){if(muted)return;audio ||= new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.value=freq;g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.18);o.start();o.stop(audio.currentTime+.18)}
 document.querySelector('#sound').onclick=()=>{muted=!muted;document.querySelector('#sound').textContent=muted?'TON AUS':'TON AN';tone(440)};
-function start(){players=Array.from({length:mode},(_,i)=>({x:80,y:wave(80)-15-i*5,v:65,vy:0,board:100,fuel:100,angle:0,spin:0,airLoops:0,bonus:0,tricks:0,air:false,alive:true,done:false,diamond:boardType(i),color:i?'#64e0d7':'#fff0cb',controls:i?{accelerate:'w',brake:'s',backward:'a',forward:'d',turbo:'f'}:{accelerate:'ArrowUp',brake:'ArrowDown',backward:'ArrowLeft',forward:'ArrowRight',turbo:'Shift'}}));camera=0;time=0;running=true;paused=false;ui.style.display='none';document.querySelector('#start').textContent='NEUER RUN ↗';document.querySelector('#state').textContent='RUN LÄUFT';tone(330)}
+function start(){players=Array.from({length:mode},(_,i)=>({x:80,y:wave(80)-15-i*5,v:65,vy:0,board:100,fuel:100,angle:0,spin:0,airLoops:0,jumpHeld:false,bonus:0,tricks:0,air:false,alive:true,done:false,diamond:boardType(i),color:i?'#64e0d7':'#fff0cb',controls:i?{accelerate:'d',brake:'s',jump:'w',rotate:'a',turbo:'f'}:{accelerate:'ArrowRight',brake:'ArrowDown',jump:'ArrowUp',rotate:'ArrowLeft',turbo:'Shift'}}));camera=0;time=0;running=true;paused=false;ui.style.display='none';document.querySelector('#start').textContent='NEUER RUN ↗';document.querySelector('#state').textContent='RUN LÄUFT';tone(330)}
 document.querySelector('#start').onclick=start;
 window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys.add(e.key.length===1?e.key.toLowerCase():e.key);if(e.repeat)return;if(players.some(p=>!p.alive)){players.filter(p=>!p.alive).forEach(rebuild);return;}if(e.key.toLowerCase()==='r')start();if(e.key.toLowerCase()==='p'&&running){paused=!paused;document.querySelector('#state').textContent=paused?'PAUSE · P ZUM FORTSETZEN':'RUN LÄUFT'}});window.addEventListener('keyup',e=>keys.delete(e.key.length===1?e.key.toLowerCase():e.key));window.addEventListener('blur',()=>{keys.clear();if(running){paused=true;document.querySelector('#state').textContent='PAUSE · P ZUM FORTSETZEN'}});
 function update(dt){
  time+=dt;
  for(const p of players){
   if(!p.alive||p.done)continue;
-  const {accelerate,brake,backward,forward,turbo}=p.controls,boost=keys.has(turbo)&&p.fuel>0;
+  const {accelerate,brake,jump,rotate,turbo}=p.controls,boost=keys.has(turbo)&&p.fuel>0;
+  const jumpPressed=keys.has(jump)&&!p.jumpHeld;p.jumpHeld=keys.has(jump);
   const oldX=p.x,oldY=p.y,oldSlope=slope(oldX);
   const input=((keys.has(accelerate)?240:0)-(keys.has(brake)?300:0)-22)+(boost?150:0);
   // Gravity projected onto the wave tangent accelerates downhill and slows uphill.
@@ -33,15 +34,15 @@ function update(dt){
   if(boost)p.fuel=Math.max(0,p.fuel-dt*23);
   if(p.board>0&&!p.air){
    // Contact is lost when following a convex crest would require a downward pull.
-   if(curvature(oldX)*p.v*p.v>gravity){
-    p.air=true;p.vy=oldSlope*p.v;p.spin=0;p.airLoops=0;tone(600);
+   if(jumpPressed||curvature(oldX)*p.v*p.v>gravity){
+    p.air=true;p.vy=jumpPressed?Math.min(oldSlope*p.v-220,-150):oldSlope*p.v;p.spin=0;p.airLoops=0;tone(600);
    }
   }
   p.x=Math.min(finish,p.x+p.v*dt);
   if(p.board<=0){p.air=true;p.vy+=(gravity-(boost?650:0))*dt;p.y+=p.vy*dt;if(p.y>=wave(p.x)-5){p.y=wave(p.x)-15;p.alive=false;tone(80)}}
   else if(p.air){
    const ay=gravity-(boost?240:0);p.y+=p.vy*dt+.5*ay*dt*dt;p.vy+=ay*dt;
-   const rotation=(keys.has(forward)?1:0)-(keys.has(backward)?1:0);p.angle+=rotation*dt*5.8;p.spin+=rotation*dt*5.8;
+   const rotation=keys.has(rotate)?-1:0;p.angle+=rotation*dt*5.8;p.spin+=rotation*dt*5.8;
    const loops=Math.floor((Math.abs(p.spin)+.001)/(Math.PI*2));
    if(loops>p.airLoops){const count=loops-p.airLoops;p.airLoops=loops;p.tricks+=count;p.fuel=Math.min(150,p.fuel+35*count);p.bonus=2;tone(850)}
    const surface=wave(p.x)-15;
