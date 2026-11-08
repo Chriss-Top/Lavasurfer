@@ -16,7 +16,7 @@ function select(n){if(running)return;mode=n;document.querySelector('#solo').clas
 document.querySelector('#solo').onclick=()=>select(1);document.querySelector('#duo').onclick=()=>select(2);
 function tone(freq){if(muted)return;audio ||= new (window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.connect(g);g.connect(audio.destination);o.frequency.value=freq;g.gain.setValueAtTime(.035,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.18);o.start();o.stop(audio.currentTime+.18)}
 document.querySelector('#sound').onclick=()=>{muted=!muted;document.querySelector('#sound').textContent=muted?'TON AUS':'TON AN';tone(440)};
-function start(){players=Array.from({length:mode},(_,i)=>({x:80,y:wave(80)-15-i*5,v:65,vy:0,board:100,fuel:100,angle:0,spin:0,airLoops:0,attackTime:0,attackCooldown:0,shield:0,smashes:0,jumpHeld:false,bonus:0,tricks:0,air:false,alive:true,done:false,diamond:boardType(i),color:i?'#64e0d7':'#fff0cb',controls:i?{accelerate:'d',brake:'s',jump:'w',rotate:'a',turbo:'f',rocket:'e',attack:'q'}:{accelerate:'ArrowRight',brake:'ArrowDown',jump:'ArrowUp',rotate:'ArrowLeft',turbo:'Shift',rocket:' ',attack:'Enter'}}));camera=0;time=0;hazards=[];sparks=[];stormClock=0;spawnClock=0;running=true;paused=false;ui.style.display='none';document.querySelector('#start').textContent='NEUER RUN ↗';document.querySelector('#state').textContent='RUN LÄUFT';tone(330)}
+function start(){players=Array.from({length:mode},(_,i)=>({x:80,y:wave(80)-15-i*5,v:65,vy:0,board:100,fuel:100,angle:0,spin:0,airLoops:0,attackTime:0,attackCooldown:0,shield:0,smashes:0,jumpHeld:false,bonus:0,tricks:0,air:false,alive:true,done:false,diamond:boardType(i),color:i?'#64e0d7':'#fff0cb',controls:i?{backward:'a',forward:'d',brake:'s',jump:'w',turbo:'f',rocket:'e',attack:'q'}:{backward:'ArrowLeft',forward:'ArrowRight',brake:'ArrowDown',jump:'ArrowUp',turbo:'Shift',rocket:' ',attack:'Enter'}}));camera=0;time=0;hazards=[];sparks=[];stormClock=0;spawnClock=0;running=true;paused=false;ui.style.display='none';document.querySelector('#start').textContent='NEUER RUN ↗';document.querySelector('#state').textContent='RUN LÄUFT';tone(330)}
 document.querySelector('#start').onclick=start;
 window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Enter'].includes(e.key))e.preventDefault();keys.add(e.key.length===1?e.key.toLowerCase():e.key);if(e.repeat)return;if(players.some(p=>!p.alive)){players.filter(p=>!p.alive).forEach(rebuild);return;}if(e.key.toLowerCase()==='r')start();if(e.key.toLowerCase()==='p'&&running){paused=!paused;document.querySelector('#state').textContent=paused?'PAUSE · P ZUM FORTSETZEN':'RUN LÄUFT'}});window.addEventListener('keyup',e=>keys.delete(e.key.length===1?e.key.toLowerCase():e.key));window.addEventListener('blur',()=>{keys.clear();if(running){paused=true;document.querySelector('#state').textContent='PAUSE · P ZUM FORTSETZEN'}});
 function hasFuel(p){return p.diamond==='diamond'||p.fuel>0}
@@ -62,14 +62,16 @@ function update(dt){
   p.previousX=p.x;p.previousY=p.y;
   p.attackTime=Math.max(0,p.attackTime-dt);p.attackCooldown=Math.max(0,p.attackCooldown-dt);p.shield=Math.max(0,p.shield-dt);
   if(keys.has(p.controls.attack)&&p.attackCooldown<=0){p.attackTime=.25;p.attackCooldown=.45}
-  const {accelerate,brake,jump,rotate}=p.controls,boost=activeDrive(p,'turbo'),rocket=activeDrive(p,'rocket');
+  const {backward,forward,brake,jump}=p.controls,boost=activeDrive(p,'turbo'),rocket=activeDrive(p,'rocket');
   const jumpPressed=keys.has(jump)&&!p.jumpHeld;p.jumpHeld=keys.has(jump);
   const oldX=p.x,oldY=p.y,oldSlope=slope(oldX);
-  const input=(keys.has(accelerate)?240:0)-(keys.has(brake)?300:0)-22;
-  // Gravity projected onto the wave tangent accelerates downhill and slows uphill.
-  const acceleration=(p.air?input*.3:input+gravity*oldSlope/(1+oldSlope*oldSlope))+(boost?150:0)+(rocket?650:0);
-  const speedLimit=rocket?640:boost?340:270;
-  p.v=Math.max(35,Math.min(Math.max(speedLimit,p.v-100*dt),p.v+acceleration*dt));
+  const friction=p.air?1:4;
+  const braking=keys.has(brake)?300:0;
+  const speedLimit=rocket?640:boost?340:0;
+  const thrust=p.v<speedLimit?(boost?150:0)+(rocket?650:0):0;
+  // Low glide drag preserves momentum; only the boosters provide powered thrust.
+  const acceleration=-friction-braking+(p.air?0:gravity*oldSlope/(1+oldSlope*oldSlope))+thrust;
+  p.v=Math.max(35,Math.min(640,p.v+acceleration*dt));
   p.bonus=Math.max(0,p.bonus-dt);
   if(p.diamond!=='diamond')p.board=Math.max(0,p.board-dt*(p.air?.3:boost?2:1.25));
   if((boost||rocket)&&p.diamond!=='diamond')p.fuel=Math.max(0,p.fuel-dt*((boost?23:0)+(rocket?38:0)));
@@ -83,7 +85,7 @@ function update(dt){
   if(p.board<=0){p.air=true;p.vy+=(gravity-(boost?650:0))*dt;p.y+=p.vy*dt;if(p.y>=wave(p.x)-5){p.y=wave(p.x)-15;p.alive=false;tone(80)}}
   else if(p.air){
    const ay=gravity-(boost?240:0);p.y+=p.vy*dt+.5*ay*dt*dt;p.vy+=ay*dt;
-   const rotation=keys.has(rotate)?-1:0;p.angle+=rotation*dt*5.8;p.spin+=rotation*dt*5.8;
+   const rotation=(keys.has(forward)?1:0)-(keys.has(backward)?1:0);p.angle+=rotation*dt*5.8;p.spin+=rotation*dt*5.8;
    const loops=Math.floor((Math.abs(p.spin)+.001)/(Math.PI*2));
    if(loops>p.airLoops){const count=loops-p.airLoops;p.airLoops=loops;p.tricks+=count;p.fuel=Math.min(150,p.fuel+35*count);p.bonus=2;tone(850)}
    const surface=wave(p.x)-15;
