@@ -8,33 +8,38 @@ In diesem Verzeichnis `python3 -m http.server 8080` ausführen und die Seite im 
 
 ## Spielen
 
-Solo oder lokales Duell wählen und den Run starten. Ziel: je nach Level 18.000, 24.000 oder 30.000 Meter erreichen, bevor Brett und Turbo verbraucht sind.
+Solo oder lokales Duell wählen und den Run starten. Ziel: je nach Level 18.000, 24.000 oder 30.000 Meter erreichen, bevor Brett und Turbo verbraucht sind – und dabei möglichst viele Trickpunkte sammeln.
 
-- Spieler 1: ↑ springen, ↓ bremsen, ← rückwärts / → vorwärts drehen, Shift für Turbo, Leertaste für starken Heckantrieb, Enter zum Angreifen, 0 für die Meteoritenkanone.
-- Spieler 2: W springen, S bremsen, A rückwärts / D vorwärts drehen, F für Turbo, E für starken Heckantrieb, Q zum Angreifen, C für die Meteoritenkanone.
-- Booster/Bremse und Drehung sind unabhängig und können gleichzeitig gedrückt werden. Gedreht wird nur in der Luft; Springen per Tastendruck ist auf der Welle möglich; zusätzlich erfolgt der Absprung bei genügend Tempo automatisch über Wellen. Zum erneuten manuellen Springen die Sprungtaste loslassen und erneut drücken.
-- Der Sprung ist höher; der zusätzliche Heckantrieb beschleunigt auch in der Luft stark nach rechts. Bei normalen Brettern benötigt er 38 Energie pro Sekunde (zusätzlich zu Turbo); Diamantbretter verbrauchen keine Energie. Nach dem Loslassen bleibt der Schwung erhalten: geringe Gleitreibung (4 Tempoeinheiten/s auf Lava, 1 in der Luft); kein künstliches Abbremsen auf ein niedrigeres Tempolimit. Vortrieb liefern ausschließlich die Booster; Hangabtrieb wirkt weiterhin.
-- Wellen können bei genügend Tempo an der Kuppe automatisch als Sprungschanze dienen.
-- Jeder vollständige Looping gibt sofort 35 Turbo, eine saubere Landung weitere 15 (maximal 150); schiefe Landungen beschädigen das Brett.
-- Nach dem Schmelzen des Bretts mit Turbo auf den Düsen weiterfliegen.
-- P pausiert, R startet neu. Bei Fokusverlust wird automatisch pausiert.
+- Spieler 1: ↑ springen, ↓ bremsen (in der Luft: Grab), ← Backflip / → Frontflip, Shift für Turbo, Leertaste für starken Heckantrieb, Enter zum Angreifen.
+- Spieler 2: W springen, S bremsen (in der Luft: Grab), A Backflip / D Frontflip, F für Turbo, E für starken Heckantrieb, Q zum Angreifen.
+- P oder der Pause-Knopf pausiert. **Neustart gibt es nur im Pausemenü per Mausklick** – die frühere R-Taste ist entfernt. Bei Fokusverlust wird automatisch pausiert.
 
-Tastatur erforderlich. Der Zwei-Spieler-Modus nutzt eine gemeinsame Kamera.
+## Dynamisches Surfen
 
-## Prüfung
+- Die Lava wogt: Die Wellen wandern über die Strecke. Bergab gibt es extra Schwung (Pumpen), bergauf kostet es weniger.
+- Absprünge berücksichtigen die Bewegung der Welle: Wer von einer steigenden Welle abhebt, fliegt höher. Bei Tempo hebt man an Kuppen automatisch ab.
+- Sprungtaste halten = höherer Sprung, in der Luft erneut drücken = Doppelsprung.
+- Drehungen haben Schwung (Beschleunigung und Nachdrehen). Grab in der Luft dreht schneller.
+- Trickpunkte: Backflip/Frontflip, Double, Triple …, Lava-Grab, Doppelsprung und lange Airtime. Saubere Landungen bauen eine Combo bis ×5 auf (verfällt nach 4,5 s ohne Trick), perfekte Landungen geben ×1,5 und Extra-Tempo. Bruchlandungen beschädigen normale Bretter und löschen die Combo.
+- Jeder vollständige Loop gibt 35 Turbo, eine saubere Landung nach Tricks weitere 15 (maximal 150).
+- Turbo in der Luft lässt dich beim Fallen gleiten. Nach dem Schmelzen des Bretts mit Turbo auf den Düsen weiterfliegen.
 
-`node --check game.js` prüft die Syntax. Browser-Smoke-Test mit Chromium/Playwright: Rendering, zwei Spieler, Eingaben, Pause und Neustart ohne JavaScript-Laufzeitfehler geprüft.
+## Monsterwellen
 
-## Wellen, Kamera und Wiederaufbau
+Etwa alle 3–4 km baut sich vor dir eine riesige Lavawelle auf und rollt über den Bildschirm auf dich zu; die Kamera zoomt heraus, damit du sie kommen siehst. Kurz bevor sie dich erreicht, bildet sich eine Lippe, die nach vorn überkippt und bricht. Danach zerfällt die Welle zu Schaum und Rauch.
 
-Höhere Wellen mit vereinfachter Physik: Hangabtrieb, tangentiale Absprunggeschwindigkeit, Kontaktverlust durch Wellenkrümmung und ballistischer Flug mit Schwerkraft. Die gemeinsame Kamera passt Ausschnitt und Zoom an beide Spieler an, einschließlich hoher Sprünge und großer Abstände.
-
-Vor dem Start oder Wiederaufbau kann jeder Spieler oben Normal oder Diamant wählen. Normale Bretter schmelzen und nehmen Landeschaden; Diamantbretter sind unzerstörbar und haben unbegrenzte Energie für Turbo und Heckantrieb. Nach einem Tod baut eine beliebige neu gedrückte Taste alle gerade gestorbenen Spieler wieder auf, in der Nähe des noch fahrenden Mitspielers. Die Auswahl gilt beim nächsten Wiederaufbau oder Neustart.
+- Mit Tempo die Wellenfront hoch: Die Welle schleudert dich weit in die Luft.
+- Wer über die Kuppe fliegt, macht automatisch einen Supertrick: **LAVA-TORNADO** (Double Backflip mit Körperdrehung, 3.000 Punkte, +60 Turbo) – mit Diamantbrett die **DIAMANT-SUPERNOVA** (Triple Backflip mit Doppeldrehung, Zeitlupe, Diamantsplitter, Schockwelle, 6.000 Punkte). Automatische Tricks landen immer sauber.
+- Wer zu langsam ist und unter der brechenden Lippe steckt, macht einen Wipeout: Tempoverlust, Schaden an normalen Brettern, Combo weg.
 
 ## Lava und Meteoriten
 
-Gelegentliche Schauer werden zwei Sekunden vorher angekündigt. Warnlinien markieren herabfallende Gefahren. Durch Tempo, Bremsen und Sprünge ausweichen oder mit Enter (P1) / Q (P2) angreifen: normale Bretter erhalten wiederholte Faustschläge, Diamantbretter einen durchgehend aktiven Diamantbohrer. Angriffe wirken nur in Reichweite und geben bei Zerstörung 10 Turbo. Einschläge verlangsamen beide Spieler und beschädigen normale Bretter; Diamantbretter bleiben unzerstörbar. Ein kurzer Schutz nach Treffern verhindert Mehrfachschaden.
+Gelegentliche Schauer werden zwei Sekunden vorher angekündigt. Warnlinien markieren herabfallende Gefahren. Durch Tempo, Bremsen und Sprünge ausweichen oder mit Enter (P1) / Q (P2) angreifen: normale Bretter erhalten Faustschläge, Diamantbretter einen durchgehend aktiven Diamantbohrer. Treffer geben 10 Turbo und 100 Punkte.
 
-## Riesenwellen und Levels
+## Bretter und Wiederaufbau
 
-Drei wählbare Strecken: 18, 24 und 30 Kilometer. Etwa alle 3 km versperrt eine riesige Lavawelle den Weg. In bis zu 1.300 Metern Entfernung mit 0 (P1) / C (P2) die Meteoritenkanone abfeuern; für jeden Schuss erneut drücken. Drei Treffer zerstören die Welle. Pro Welle teilen beide Spieler acht Schüsse, einschließlich Fehlschüssen (zum Beispiel oberhalb der Welle). Nach acht verbrauchten Schüssen wartet das Spiel auf fliegende Projektile, dann zerstört eine automatische Lasersalve eine noch stehende Welle. Bei längerem Feststecken räumt der Notlaser die Welle ebenfalls weg. Anschließend kippt sie um und löst sich in Rauch auf. Zerstörte Wellen bleiben auch für zurückliegende Spieler offen.
+Vor dem Start oder Wiederaufbau kann jeder Spieler Normal oder Diamant wählen. Normale Bretter schmelzen und nehmen Landeschaden; Diamantbretter sind unzerstörbar, haben unbegrenzte Energie und machen den Supernova-Trick. Nach einem Tod baut eine beliebige Taste das Brett wieder auf, in der Nähe des noch fahrenden Mitspielers. Der beste Punktestand wird lokal im Browser gespeichert.
+
+## Prüfung
+
+`node --check game.js` prüft die Syntax. Browser-Smoke-Test mit Chromium/Playwright: Solo und Duell, Monsterwellen mit beiden Brettern (Tornado/Supernova), Wipeout, Pausemenü (R ohne Wirkung, Weiter und Neustart per Maus) ohne JavaScript-Laufzeitfehler geprüft.
