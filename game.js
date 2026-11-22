@@ -462,6 +462,7 @@ function update(dt) {
   time += dt;
   updateGiants(dt);
   for (const p of players) updatePlayer(p, dt);
+  applyLeash(dt);
   updateHazards(dt);
   updateEffects(dt);
   if (players.every(p => !live(p))) endRun();
@@ -478,6 +479,23 @@ function endRun() {
 }
 
 // ───────────────────────── Camera ─────────────────────────
+const ZOOM_MIN_X = .42, ZOOM_MIN_Y = .34;
+// Widest player spread the camera can show at full zoom-out (with margins).
+const maxGap = () => canvas.clientWidth / ZOOM_MIN_X - 340;
+// In duel mode the leader is braked once the camera has zoomed out far enough,
+// and can never get further ahead than the camera can show.
+function applyLeash(dt) {
+  const act = players.filter(live);
+  players.forEach(p => p.leash = false);
+  if (act.length < 2) return;
+  const lead = act.reduce((a, b) => a.x > b.x ? a : b), back = act.reduce((a, b) => a.x < b.x ? a : b);
+  const G = maxGap(), soft = G * .7, gap = lead.x - back.x;
+  if (gap <= soft) return;
+  lead.leash = true;
+  const k = clamp((gap - soft) / (G - soft), 0, 1), target = Math.max(35, back.v * .9);
+  if (lead.v > target) lead.v -= (lead.v - target) * Math.min(1, dt * (1 + 7 * k));
+  if (gap > G) { lead.x = back.x + G; lead.v = Math.min(lead.v, Math.max(35, back.v)) }
+}
 function updateCamera(dt) {
   const w = canvas.clientWidth;
   const alive = players.filter(live);
@@ -485,13 +503,15 @@ function updateCamera(dt) {
   let minX = Math.min(...vis.map(p => p.x)) - 110, maxX = Math.max(...vis.map(p => p.x)) + 170;
   let minY = Math.min(110, ...vis.map(p => p.y - 90)), maxY = Math.max(370, ...vis.map(p => p.y + 85));
   for (const g of giants) {
-    // Zoom out so the giant wave can be seen rolling in across the screen.
+    // Zoom out so the giant wave can be seen rolling in – but never at the cost of losing a player.
     const s = giantState(g, time);
     if (s.h < 30 || s.foam > .6 || s.X < minX - 650 || s.X > maxX + 1250) continue;
-    minX = Math.min(minX, s.X - g.L * 1.6); maxX = Math.max(maxX, s.X + g.L * 1.4);
+    const nMin = Math.min(minX, s.X - g.L * 1.6), nMax = Math.max(maxX, s.X + g.L * 1.4);
+    if (nMax - nMin > w / ZOOM_MIN_X) continue;
+    minX = nMin; maxX = nMax;
     minY = Math.min(minY, baseWave(s.X, time) - s.h - 60);
   }
-  const tz = clamp(Math.min(w / (maxX - minX), (VIEW_H - 30) / (maxY - minY)), .42, 1);
+  const tz = clamp(Math.min(w / (maxX - minX), (VIEW_H - 30) / (maxY - minY)), Math.min(ZOOM_MIN_X, ZOOM_MIN_Y), 1);
   const tcx = (minX + maxX) / 2, tcy = (minY + maxY) / 2;
   if (!cam.ready) { cam = { cx: tcx, cy: tcy, zoom: tz, ready: true }; return }
   cam.zoom += (tz - cam.zoom) * (1 - Math.exp(-dt * (tz < cam.zoom ? 6 : 2)));
@@ -620,6 +640,7 @@ function drawPlayer(p) {
   ctx.save(); ctx.translate(p.x, p.y);
   if (!p.alive) { ctx.fillStyle = p.color; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('TASTE → NEUAUFBAU', 0, -65); ctx.globalAlpha = .45 }
   if (p.shield > 0 && !p.autoTrick) { ctx.strokeStyle = '#fff5bd'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -25, 48, 0, TAU); ctx.stroke() }
+  if (p.leash && live(p)) { ctx.fillStyle = '#ffd56a'; ctx.font = `bold ${Math.round(13 / Math.max(.5, cam.zoom))}px sans-serif`; ctx.textAlign = 'center'; ctx.fillText('⏳ WARTE AUF P' + (players.find(q => q !== p).id + 1), 0, -95) }
   if (p.combo > 1 && live(p)) { ctx.fillStyle = '#ffd56a'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('COMBO ×' + p.combo, 0, p.air ? 34 : -72) }
   ctx.scale(1.5, 1.5); ctx.rotate(p.board ? p.angle : 0);
   if (p.twist) { const c = Math.cos(p.twist); ctx.scale((c >= 0 ? 1 : -1) * Math.max(.12, Math.abs(c)), 1) }
@@ -723,7 +744,7 @@ function draw(dt) {
 function updateHud() {
   $('#hud').innerHTML = players.map((p, i) => {
     const status = p.done ? 'IM ZIEL' : !p.alive ? 'TASTE: NEUAUFBAU' : p.diamond ? 'DIAMANT ∞' : p.board ? 'BRETT ' + Math.ceil(p.board) + '%' : 'DÜSENFLUG';
-    const trick = p.autoTrick ? '★ ' + p.autoTrick.name : p.bonus > 0 ? '· TRICK-BONUS!' : '';
+    const trick = p.autoTrick ? '★ ' + p.autoTrick.name : p.leash ? '· GEBREMST – WARTE AUF MITSPIELER' : p.bonus > 0 ? '· TRICK-BONUS!' : '';
     return `<div class="playerhud" style="color:${p.color}">P${i + 1} · ${status} · ${p.score.toLocaleString('de-DE')} PKT${p.combo > 1 ? ' · COMBO ×' + p.combo : ''}
       <div class="bar"><i style="width:${p.board}%"></i></div>TEMPO ${Math.round(p.v)} · ${p.tricks} LOOPS · ${p.smashes} TREFFER ${trick}<br>
       TURBO ${p.diamond ? '∞' : Math.ceil(p.fuel) + ' / 150'} ${activeDrive(p, 'rocket') ? '· HECKANTRIEB' : ''}

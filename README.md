@@ -36,6 +36,10 @@ Etwa alle 3–4 km baut sich vor dir eine riesige Lavawelle auf und rollt über 
 
 Gelegentliche Schauer werden zwei Sekunden vorher angekündigt. Warnlinien markieren herabfallende Gefahren. Durch Tempo, Bremsen und Sprünge ausweichen oder mit Enter (P1) / Q (P2) angreifen: normale Bretter erhalten Faustschläge, Diamantbretter einen durchgehend aktiven Diamantbohrer. Treffer geben 10 Turbo und 100 Punkte.
 
+## Duell-Kamera
+
+Die gemeinsame Kamera zoomt heraus, wenn die Spieler auseinanderfahren. Ist sie fast ganz herausgezoomt, wird der vordere Spieler sanft auf das Tempo des hinteren gebremst („WARTE AUF P2“). Weiter als die Kamera zeigen kann, kommt er nicht davon – so bleiben immer beide Spieler im Bild. Eine Monsterwelle wird nur dann zusätzlich ins Bild geholt, wenn beide Spieler trotzdem sichtbar bleiben.
+
 ## Bretter und Wiederaufbau
 
 Vor dem Start oder Wiederaufbau kann jeder Spieler Normal oder Diamant wählen. Normale Bretter schmelzen und nehmen Landeschaden; Diamantbretter sind unzerstörbar, haben unbegrenzte Energie und machen den Supernova-Trick. Nach einem Tod baut eine beliebige Taste das Brett wieder auf, in der Nähe des noch fahrenden Mitspielers. Der beste Punktestand wird lokal im Browser gespeichert.
