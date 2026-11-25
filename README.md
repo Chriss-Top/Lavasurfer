@@ -16,7 +16,8 @@ Solo oder lokales Duell wählen und den Run starten. Ziel: je nach Level 18.000,
 
 ## Dynamisches Surfen
 
-- Die Lava wogt: Die Wellen wandern über die Strecke. Bergab gibt es extra Schwung (Pumpen), bergauf kostet es weniger.
+- Die Lava wogt: Die Wellen wandern über die Strecke. Das Spieltempo ist gemäßigt (Turbo bis 280, Heckantrieb bis 460, Maximum 480).
+- **Flow:** Wer im Tempobereich 150–270 über die Wellen fährt (Tempoanzeige wird grün), baut Flow auf (Anzeige im HUD, grüner Schimmer am Fahrer). Dann gibt es bergab mehr Schwung und bergauf weniger Verlust – und jeder Absprung trägt mit vollem Flow bis zu 45 % höher. Zu schnell oder zu langsam baut den Flow wieder ab; Bruchlandung und Wipeout setzen ihn auf null, perfekte Landungen geben etwas dazu.
 - Absprünge berücksichtigen die Bewegung der Welle: Wer von einer steigenden Welle abhebt, fliegt höher. Bei Tempo hebt man an Kuppen automatisch ab.
 - Sprungtaste halten = höherer Sprung, in der Luft erneut drücken = Doppelsprung.
 - Drehungen haben Schwung (Beschleunigung und Nachdrehen). Grab in der Luft dreht schneller.
@@ -28,8 +29,8 @@ Solo oder lokales Duell wählen und den Run starten. Ziel: je nach Level 18.000,
 
 Etwa alle 3–4 km baut sich vor dir eine riesige Lavawelle auf und rollt über den Bildschirm auf dich zu; die Kamera zoomt heraus, damit du sie kommen siehst. Kurz bevor sie dich erreicht, bildet sich eine Lippe, die nach vorn überkippt und bricht. Danach zerfällt die Welle zu Schaum und Rauch.
 
-- Mit Tempo die Wellenfront hoch: Die Welle schleudert dich weit in die Luft.
-- Wer über die Kuppe fliegt, macht automatisch einen Supertrick: **LAVA-TORNADO** (Double Backflip mit Körperdrehung, 3.000 Punkte, +60 Turbo) – mit Diamantbrett die **DIAMANT-SUPERNOVA** (Triple Backflip mit Doppeldrehung, Zeitlupe, Diamantsplitter, Schockwelle, 6.000 Punkte). Automatische Tricks landen immer sauber.
+- Mit Tempo die Wellenfront hoch: Die Welle wirft dich in die Luft – mit Flow etwas höher.
+- Wer über die Kuppe fliegt, macht automatisch einen Supertrick: **LAVA-TORNADO** (Backflip mit Körperdrehung, 2.000 Punkte, +60 Turbo) – mit Diamantbrett die **DIAMANT-SUPERNOVA** (Double Backflip mit Körperdrehung und Diamantfunkeln, 4.000 Punkte). Automatische Tricks landen immer sauber.
 - Wer zu langsam ist und unter der brechenden Lippe steckt, macht einen Wipeout: Tempoverlust, Schaden an normalen Brettern, Combo weg.
 
 ## Lava und Meteoriten

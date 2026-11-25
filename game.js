@@ -3,6 +3,7 @@
 const $ = s => document.querySelector(s);
 const canvas = $('#game'), ctx = canvas.getContext('2d'), keys = new Set();
 const VIEW_H = 370, GRAVITY = 390, TAU = Math.PI * 2;
+const MAX_SPEED = 480, FLOW_LO = 150, FLOW_HI = 270;   // sweet spot for riding the swells
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const smoother = t => t * t * t * (t * (t * 6 - 15) + 10);
@@ -77,7 +78,7 @@ function freshState(x, i) {
     x, y: surf(x) - 15, v: 70, vy: 0, board: 100, fuel: 100, angle: Math.atan(slopeAt(x)), angVel: 0, spin: 0,
     airLoops: 0, trickDir: 0, airTime: 0, grabTime: 0, grabbing: false, doubleUsed: false, jumpBoost: 0, jumpHeld: true,
     air: false, alive: true, done: false, diamond: boardType(i) === 'diamond', attackTime: 0, attackCooldown: 0,
-    shield: 0, tumble: 0, twist: 0, autoTrick: null, autoDone: null, bonus: 0, combo: 0, comboTimer: 0, trail: [],
+    shield: 0, tumble: 0, twist: 0, flow: 0, flowShown: false, autoTrick: null, autoDone: null, bonus: 0, combo: 0, comboTimer: 0, trail: [],
     prevX: x, prevY: surf(x) - 15
   };
 }
@@ -182,12 +183,14 @@ function flipPoints(n) { return [0, 500, 1200, 2100, 3200][Math.min(n, 4)] + Mat
 function launch(p, info, manual) {
   let vy = info.yx * p.v + info.yt;
   if (manual) vy = Math.min(vy - 330, -270);
+  if (vy < 0) vy *= 1 + .45 * p.flow;                       // riding in flow carries you higher
   const g = giantUnder(p.x);
   if (g) {
-    // The face of a giant wave throws the rider high into the air.
-    vy = Math.max(-490, Math.min(vy - (manual ? 90 : 140), -330));
-    burst(p.x, p.y, '#fff0b0', 18, 1.3);
+    // The face of a giant wave throws the rider into the air.
+    vy = Math.max(-320 - 60 * p.flow, Math.min(vy - (manual ? 50 : 70), -260));
+    burst(p.x, p.y, '#fff0b0', 12);
   }
+  if (p.flow > .5 && vy < -150) burst(p.x, p.y, '#9fffb0', 6);
   Object.assign(p, { air: true, vy, spin: 0, angVel: 0, airLoops: 0, airTime: 0, grabTime: 0, doubleUsed: false, jumpBoost: manual ? .32 : 0, autoDone: null });
   tone(manual ? 600 : 520);
 }
@@ -201,21 +204,18 @@ function giantUnder(x) {
 
 function startAutoTrick(p) {
   const d = p.diamond;
-  p.autoTrick = { name: d ? 'DIAMANT-SUPERNOVA' : 'LAVA-TORNADO', t: 0, dur: d ? 1.55 : 1.2, turns: d ? 3 : 2, twists: d ? 2 : 1, start: p.angle, pts: d ? 6000 : 3000 };
+  p.autoTrick = { name: d ? 'DIAMANT-SUPERNOVA' : 'LAVA-TORNADO', t: 0, dur: d ? 1.3 : 1.05, turns: d ? 2 : 1, twists: 1, start: p.angle, pts: d ? 4000 : 2000 };
   p.angVel = 0; p.grabbing = false; p.shield = Math.max(p.shield, .5);
-  addPopup(p.x, p.y - 120, p.autoTrick.name + '!', d ? '#a9ffff' : '#ffb35a', 24, 1.8);
-  shake = Math.max(shake, .3);
+  addPopup(p.x, p.y - 110, p.autoTrick.name + '!', d ? '#a9ffff' : '#ffb35a', 19, 1.4);
   if (d) {
-    slowmo = .95; flash = .45; flashColor = '#c8ffff';
-    rings.push({ x: p.x, y: p.y - 25, r: 12, speed: 420, life: .7, max: .7, color: '#9fffff', width: 6 },
-      { x: p.x, y: p.y - 25, r: 4, speed: 260, life: .9, max: .9, color: '#ff9cf5', width: 4 });
+    flash = .12; flashColor = '#c8ffff';
+    rings.push({ x: p.x, y: p.y - 25, r: 10, speed: 220, life: .5, max: .5, color: '#9fffff', width: 3 });
     const cols = ['#a9ffff', '#ffffff', '#ff9cf5', '#7fd8ff', '#fff59a'];
-    for (let i = 0; i < 46; i++) { const a = Math.random() * TAU, sp = rand(90, 380); sparks.push({ x: p.x, y: p.y - 25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, max: 1, color: cols[i % 5], size: 5, float: true, diamond: true }) }
+    for (let i = 0; i < 18; i++) { const a = Math.random() * TAU, sp = rand(60, 220); sparks.push({ x: p.x, y: p.y - 25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, max: 1, color: cols[i % 5], size: 5, float: true, diamond: true }) }
     chord([880, 1175, 1480, 1760]);
   } else {
-    flash = .22; flashColor = '#ffb05a';
-    rings.push({ x: p.x, y: p.y - 25, r: 10, speed: 330, life: .6, max: .6, color: '#ff8a35', width: 6 });
-    for (let i = 0; i < 28; i++) { const a = Math.random() * TAU, sp = rand(60, 260); sparks.push({ x: p.x, y: p.y - 25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .8, max: .8, color: i % 2 ? '#ffcf5a' : '#ff6a2a', size: 5, float: true }) }
+    rings.push({ x: p.x, y: p.y - 25, r: 8, speed: 180, life: .45, max: .45, color: '#ff8a35', width: 3 });
+    for (let i = 0; i < 12; i++) { const a = Math.random() * TAU, sp = rand(50, 180); sparks.push({ x: p.x, y: p.y - 25, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .8, max: .8, color: i % 2 ? '#ffcf5a' : '#ff6a2a', size: 5, float: true }) }
     chord([440, 554, 660]);
   }
 }
@@ -225,7 +225,7 @@ function runAutoTrick(p, dt) {
   p.angle = lerp(a.start, .2, e) - TAU * a.turns * e;   // backflips
   p.twist = TAU * a.twists * e;                          // body spin
   const cols = p.diamond ? ['#a9ffff', '#ffffff', '#ff9cf5', '#fff59a'] : ['#ffcf5a', '#ff6a2a', '#ff9a3a'];
-  for (let i = 0; i < (p.diamond ? 3 : 2); i++) sparks.push({ x: p.x + rand(-20, 20), y: p.y - 20 + rand(-20, 20), vx: rand(-60, 60) - p.v * .3, vy: rand(-50, 30), life: .55, max: .55, color: cols[(Math.random() * cols.length) | 0], size: p.diamond ? 4 : 5, float: true, diamond: p.diamond });
+  if (Math.random() < .5) sparks.push({ x: p.x + rand(-20, 20), y: p.y - 20 + rand(-20, 20), vx: rand(-60, 60) - p.v * .3, vy: rand(-50, 30), life: .55, max: .55, color: cols[(Math.random() * cols.length) | 0], size: p.diamond ? 4 : 5, float: true, diamond: p.diamond });
   if (k >= 1) finishAutoTrick(p);
 }
 function finishAutoTrick(p) {
@@ -248,16 +248,16 @@ function land(p, ground) {
   if (p.doubleUsed) pts += 150;
   if (p.airTime > 1) pts += Math.round((p.airTime - 1) * 250);
   const impact = p.vy;
-  p.v = Math.max(35, (p.v + p.vy * s) / (1 + s * s));
+  p.v = clamp((p.v + p.vy * s) / (1 + s * s), 35, MAX_SPEED);
   Object.assign(p, { y: ground, vy: 0, air: false, angle: tang, angVel: 0, grabbing: false, twist: 0 });
   if (diff > 1.2) {
     if (!p.diamond) p.board = Math.max(0, p.board - 18);
-    p.v = Math.max(35, p.v * .6); p.combo = 0; p.comboTimer = 0; p.tumble = .6;
+    p.v = Math.max(35, p.v * .6); p.combo = 0; p.comboTimer = 0; p.tumble = .6; p.flow = 0;
     addPopup(p.x, p.y - 80, 'BRUCHLANDUNG', '#ff7a5a', 17);
     shake = Math.max(shake, .35); burst(p.x, p.y, '#ff8e36', 16); tone(100);
   } else {
     const perfect = diff < .3;
-    if (perfect && p.airTime > .5) p.v = Math.min(640, p.v + 45);
+    if (perfect && p.airTime > .5) { p.v = Math.min(MAX_SPEED, p.v + 30); p.flow = Math.min(1, p.flow + .15) }
     if (p.airLoops || auto) p.fuel = Math.min(150, p.fuel + 15);
     if (pts >= 400) {
       p.combo++; p.comboTimer = 4.5;
@@ -279,7 +279,7 @@ function land(p, ground) {
 function wipeout(p) {
   p.v = Math.max(35, p.v * (p.diamond ? .6 : .35));
   if (!p.diamond) { p.board = Math.max(0, p.board - 22); p.fuel = Math.max(0, p.fuel - 15) }
-  p.shield = 1.6; p.tumble = .9; p.combo = 0; p.comboTimer = 0; p.x -= 30;
+  p.shield = 1.6; p.tumble = .9; p.combo = 0; p.comboTimer = 0; p.x -= 30; p.flow = 0;
   addPopup(p.x, p.y - 90, 'WIPEOUT!', '#ff7a5a', 20);
   shake = Math.max(shake, .6); burst(p.x, p.y - 20, '#fff0b8', 24, 1.4); tone(70, .4, .05, 'sawtooth');
 }
@@ -304,12 +304,17 @@ function updatePlayer(p, dt) {
   if (!p.air && p.board > 0) {
     if (keys.has(c.brake)) acc -= 300;
     // Pumping: downhill gives extra speed, uphill costs less – giant waves carry you up their face.
-    const gs = giantSlope(p.x), bs = info.yx - gs;
-    acc += GRAVITY * (bs * (bs > 0 ? 1.35 : .85) + gs * (gs > 0 ? 1.1 : .22)) / (1 + info.yx * info.yx);
+    // Pumping only works at the right speed: then downhill gives extra push and uphill costs less.
+    const gs = giantSlope(p.x), bs = info.yx - gs, inFlow = p.v >= FLOW_LO && p.v <= FLOW_HI;
+    const down = inFlow ? 1.15 + .35 * p.flow : 1, up = inFlow ? .8 - .2 * p.flow : 1.05;
+    acc += GRAVITY * (bs * (bs > 0 ? down : up) + gs * (gs > 0 ? 1.1 : .22)) / (1 + info.yx * info.yx);
+    p.flow = clamp(p.flow + dt * (inFlow ? .3 : -.45), 0, 1);
+    if (p.flow >= 1 && !p.flowShown) { p.flowShown = true; addPopup(p.x, p.y - 70, 'FLOW!', '#9fffb0', 15, 1); tone(660) }
+    if (p.flow < .6) p.flowShown = false;
   }
-  const limit = rocket ? 640 : boost ? 360 : 0;
-  if (p.v < limit) acc += (boost ? 160 : 0) + (rocket ? 650 : 0);
-  p.v = clamp(p.v + acc * dt, 35, 640);
+  const limit = rocket ? 460 : boost ? 280 : 0;
+  if (p.v < limit) acc += (boost ? 130 : 0) + (rocket ? 450 : 0);
+  p.v = clamp(p.v + acc * dt, 35, MAX_SPEED);
   if (!p.diamond) {
     p.board = Math.max(0, p.board - dt * (p.air ? .3 : boost ? 2 : 1.25));
     if (boost || rocket) p.fuel = Math.max(0, p.fuel - dt * ((boost ? 23 : 0) + (rocket ? 38 : 0)));
@@ -344,7 +349,7 @@ function airUpdate(p, dt, jumpDown, jumpPressed, boost) {
   }
   let ay = GRAVITY - (boost && p.vy > 0 ? 130 : 0);   // turbo lets you glide down
   if (p.jumpBoost > 0 && jumpDown && p.vy < 0) { ay *= .45; p.jumpBoost -= dt } else p.jumpBoost = 0;   // hold = higher
-  if (p.autoTrick) ay *= .8;                                                                         // epic hang time
+  if (p.autoTrick) ay *= .92;                                                                        // a little hang time
   p.y += p.vy * dt + .5 * ay * dt * dt; p.vy += ay * dt;
 
   if (p.autoTrick) runAutoTrick(p, dt);
@@ -644,7 +649,8 @@ function drawPlayer(p) {
   if (p.combo > 1 && live(p)) { ctx.fillStyle = '#ffd56a'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('COMBO ×' + p.combo, 0, p.air ? 34 : -72) }
   ctx.scale(1.5, 1.5); ctx.rotate(p.board ? p.angle : 0);
   if (p.twist) { const c = Math.cos(p.twist); ctx.scale((c >= 0 ? 1 : -1) * Math.max(.12, Math.abs(c)), 1) }
-  ctx.shadowColor = p.autoTrick ? (p.diamond ? '#8fffff' : '#ff8a35') : '#171310'; ctx.shadowBlur = p.autoTrick ? 18 : 4;
+  ctx.shadowColor = p.autoTrick ? (p.diamond ? '#8fffff' : '#ff8a35') : '#171310'; ctx.shadowBlur = p.autoTrick ? 12 : 4;
+  if (!p.autoTrick && p.flow > .6 && live(p)) { ctx.shadowColor = '#9fffb0'; ctx.shadowBlur = 4 + 10 * p.flow }
   if (p.board) drawBoard(p);
   ctx.fillStyle = '#777b7a'; ctx.fillRect(-19, 8, 10, 8); ctx.fillRect(9, 8, 10, 8);
   if (activeDrive(p, 'rocket')) { ctx.fillStyle = '#73898d'; ctx.fillRect(-35, -4, 19, 13); poly([[-35, -2], [-78 - Math.sin(time * 40) * 12, 3], [-35, 8]], '#ff943d'); poly([[-35, 0], [-60, 3], [-35, 5]], '#fff2aa') }
@@ -746,9 +752,9 @@ function updateHud() {
     const status = p.done ? 'IM ZIEL' : !p.alive ? 'TASTE: NEUAUFBAU' : p.diamond ? 'DIAMANT ∞' : p.board ? 'BRETT ' + Math.ceil(p.board) + '%' : 'DÜSENFLUG';
     const trick = p.autoTrick ? '★ ' + p.autoTrick.name : p.leash ? '· GEBREMST – WARTE AUF MITSPIELER' : p.bonus > 0 ? '· TRICK-BONUS!' : '';
     return `<div class="playerhud" style="color:${p.color}">P${i + 1} · ${status} · ${p.score.toLocaleString('de-DE')} PKT${p.combo > 1 ? ' · COMBO ×' + p.combo : ''}
-      <div class="bar"><i style="width:${p.board}%"></i></div>TEMPO ${Math.round(p.v)} · ${p.tricks} LOOPS · ${p.smashes} TREFFER ${trick}<br>
+      <div class="bar"><i style="width:${p.board}%"></i></div>TEMPO <b style="color:${p.v >= FLOW_LO && p.v <= FLOW_HI ? '#9fffb0' : 'inherit'}">${Math.round(p.v)}</b> · FLOW ${Math.round(p.flow * 100)}% · ${p.tricks} LOOPS · ${p.smashes} TREFFER ${trick}<br>
       TURBO ${p.diamond ? '∞' : Math.ceil(p.fuel) + ' / 150'} ${activeDrive(p, 'rocket') ? '· HECKANTRIEB' : ''}
-      <div class="bar"><i style="width:${p.diamond ? 100 : p.fuel / 150 * 100}%;background:#64e0d7"></i></div></div>`;
+      <div class="bar"><i style="width:${p.diamond ? 100 : p.fuel / 150 * 100}%;background:#64e0d7"></i></div><div class="bar"><i style="width:${p.flow * 100}%;background:#9fffb0"></i></div></div>`;
   }).join('');
   $('#finish').textContent = 'FINISH · ' + finish.toLocaleString('de-DE') + ' m';
   $('#distance').textContent = `${Math.min(finish, Math.floor(Math.max(0, ...players.map(p => p.x)))).toLocaleString('de-DE')} / ${finish.toLocaleString('de-DE')} m`;
